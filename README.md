@@ -19,6 +19,7 @@
   - [Before you proceed](#before-you-proceed)
   - [Install](#install)
 - [Writing your own incentive mechanism](#writing-your-own-incentive-mechanism)
+- [Running this subnet (validator + miner)](#running-this-subnet-validator--miner)
 - [Writing your own subnet API](#writing-your-own-subnet-api)
 - [Subnet Links](#subnet-links)
 - [License](#license)
@@ -47,6 +48,10 @@ Each subnet consists of:
 - Subnet miners and subnet validators.
 - A protocol using which the subnet miners and subnet validators interact with one another. This protocol is part of the incentive mechanism.
 - The Bittensor API using which the subnet miners and subnet validators interact with Bittensor's onchain consensus engine [Yuma Consensus](https://bittensor.com/documentation/validating/yuma-consensus). The Yuma Consensus is designed to drive these actors: subnet validators and subnet miners, into agreement on who is creating value and what that value is worth. 
+
+### This subnet: Inference-as-a-Service
+
+This subnet is designed for model inference. Validators send prompts, miners return responses, and validators score responses against expected outputs. Miners can choose any model they want to run (including fine-tuned variants) and report the model name back to validators. By default, miners use placeholder responses, but you can replace the miner logic with a real model or inference service. The incentive mechanism rewards correct responses and can be extended to include latency or quality metrics.
 
 This starter template is split into three primary files. To write your own incentive mechanism, you should edit these files. These files are:
 1. `template/protocol.py`: Contains the definition of the protocol used by subnet miners and subnet validators.
@@ -84,8 +89,8 @@ As described in [Quickstarter template](#quickstarter-template) section above, w
 - `template/protocol.py`: Contains the definition of the wire-protocol used by miners and validators.
 - `neurons/miner.py`: Script that defines the miner's behavior, i.e., how the miner responds to requests from validators.
 - `neurons/validator.py`: This script defines the validator's behavior, i.e., how the validator requests information from the miners and determines the scores.
-- `template/forward.py`: Contains the definition of the validator's forward pass.
-- `template/reward.py`: Contains the definition of how validators reward miner responses.
+- `template/validator/forward.py`: Contains the definition of the validator's forward pass.
+- `template/validator/reward.py`: Contains the definition of how validators reward miner responses.
 
 In addition to the above files, you should also update the following files:
 - `README.md`: This file contains the documentation for your project. Update this file to reflect your project's documentation.
@@ -97,6 +102,33 @@ In addition to the above files, you should also update the following files:
 __Note__
 The `template` directory should also be renamed to your project name.
 ---
+
+## Running this subnet (validator + miner)
+
+Follow the full local/testnet/mainnet setup instructions in the docs linked above. Once your wallets are created and registered, you can run a validator and miner for this inference subnet.
+
+### Run a miner
+
+```bash
+python neurons/miner.py --netuid <NETUID> --wallet.name miner --wallet.hotkey default --logging.debug
+```
+
+Optional: report the model you are running. This is not enforced but helps validators understand miner behavior:
+
+```bash
+export MINER_MODEL_NAME="my-llama3-8b-finetune"
+python neurons/miner.py --netuid <NETUID> --wallet.name miner --wallet.hotkey default --logging.debug
+```
+
+### Run a validator
+
+```bash
+python neurons/validator.py --netuid <NETUID> --wallet.name validator --wallet.hotkey default --logging.debug
+```
+
+### How scoring works
+
+Validators sample inference tasks, send prompts to miners, and compare responses to expected outputs. Correct responses receive higher rewards. You can expand this logic in `template/validator/reward.py` to include latency, safety checks, or more complex grading.
 
 # Writing your own subnet API
 To leverage the abstract `SubnetsAPI` in Bittensor, you can implement a standardized interface. This interface is used to interact with the Bittensor network and can be used by a client to interact with the subnet through its exposed axons.
